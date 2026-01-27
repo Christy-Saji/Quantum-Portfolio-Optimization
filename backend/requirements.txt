@@ -1,0 +1,27 @@
+# Backend Dependencies for Quantum Portfolio Optimization
+# Python 3.10+ required
+
+# Quantum Computing
+qiskit>=1.0.0
+qiskit-algorithms>=0.3.0
+qiskit-aer>=0.15.0
+
+# Web Framework
+fastapi>=0.109.0
+uvicorn[standard]>=0.27.0
+pydantic>=2.0.0
+
+# Data Processing
+numpy>=1.24.0
+pandas>=2.0.0
+scipy>=1.11.0
+
+# Stock Data (optional - falls back to cached data)
+yfinance>=0.2.36
+
+# HTTP Client (for testing)
+httpx>=0.26.0
+requests>=2.31.0
+
+# Development
+python-dotenv>=1.0.0

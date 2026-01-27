@@ -1,0 +1,17 @@
+# Render deployment configuration
+# https://render.com/docs/yaml-spec
+
+services:
+  # Backend API
+  - type: web
+    name: quantum-portfolio-api
+    runtime: python
+    region: oregon
+    plan: free
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: cd backend && uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.10.0
+    healthCheckPath: /health
+    autoDeploy: true

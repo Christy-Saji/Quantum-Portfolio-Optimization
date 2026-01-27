@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description"
+        content="Quantum Portfolio Optimization using QAOA - Select optimal stocks using quantum computing">
+    <title>Quantum Portfolio Optimizer | QAOA</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+</head>
+
+<body>
+    <!-- Animated Background -->
+    <div class="bg-animation">
+        <div class="quantum-particle"></div>
+        <div class="quantum-particle"></div>
+        <div class="quantum-particle"></div>
+        <div class="quantum-particle"></div>
+        <div class="quantum-particle"></div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo">
+                <span class="logo-icon">⚛️</span>
+                <h1>Quantum Portfolio Optimizer</h1>
+            </div>
+            <p class="tagline">Harness QAOA for optimal stock selection</p>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Stock Selection Panel -->
+            <section class="panel stock-panel">
+                <div class="panel-header">
+                    <h2>
+                        <span class="icon">📈</span>
+                        Select Stocks
+                    </h2>
+                    <span class="selected-count" id="selectedCount">0 selected</span>
+                </div>
+
+                <div class="stock-grid" id="stockGrid">
+                    <!-- Stocks will be loaded here -->
+                    <div class="loading-placeholder">
+                        <div class="spinner"></div>
+                        <p>Loading stocks...</p>
+                    </div>
+                </div>
+
+                <div class="quick-actions">
+                    <button class="btn btn-outline" id="selectAllBtn">Select All</button>
+                    <button class="btn btn-outline" id="clearAllBtn">Clear All</button>
+                </div>
+            </section>
+
+            <!-- Configuration Panel -->
+            <section class="panel config-panel">
+                <div class="panel-header">
+                    <h2>
+                        <span class="icon">⚙️</span>
+                        Configuration
+                    </h2>
+                </div>
+
+                <div class="config-options">
+                    <!-- Portfolio Size -->
+                    <div class="config-group">
+                        <label for="portfolioSize">Portfolio Size (k)</label>
+                        <p class="config-description">Number of stocks to select</p>
+                        <div class="button-group">
+                            <button class="size-btn active" data-value="3">3 Stocks</button>
+                            <button class="size-btn" data-value="4">4 Stocks</button>
+                            <button class="size-btn" data-value="5">5 Stocks</button>
+                        </div>
+                        <input type="hidden" id="portfolioSize" value="3">
+                    </div>
+
+                    <!-- Risk Aversion -->
+                    <div class="config-group">
+                        <label for="riskAversion">Risk Aversion (λ)</label>
+                        <p class="config-description">0 = Max Returns, 1 = Min Risk</p>
+                        <div class="slider-container">
+                            <input type="range" id="riskAversion" min="0" max="100" value="50">
+                            <div class="slider-labels">
+                                <span>Returns</span>
+                                <span class="slider-value" id="riskValue">0.50</span>
+                                <span>Safety</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Advanced Options (Collapsible) -->
+                    <details class="advanced-options">
+                        <summary>Advanced QAOA Settings</summary>
+                        <div class="advanced-content">
+                            <div class="config-group">
+                                <label for="qaoaDepth">Circuit Depth (p)</label>
+                                <select id="qaoaDepth">
+                                    <option value="1" selected>p = 1 (Fast)</option>
+                                    <option value="2">p = 2 (Balanced)</option>
+                                </select>
+                            </div>
+                            <div class="config-group">
+                                <label for="maxIterations">Max Iterations</label>
+                                <input type="number" id="maxIterations" value="50" min="10" max="200">
+                            </div>
+                            <div class="config-group">
+                                <label for="shots">Measurement Shots</label>
+                                <select id="shots">
+                                    <option value="512">512 (Quick)</option>
+                                    <option value="1024" selected>1024 (Standard)</option>
+                                    <option value="2048">2048 (Precise)</option>
+                                </select>
+                            </div>
+                        </div>
+                    </details>
+                </div>
+
+                <!-- Optimize Button -->
+                <button class="btn btn-primary optimize-btn" id="optimizeBtn">
+                    <span class="btn-icon">⚛️</span>
+                    <span class="btn-text">Optimize Portfolio</span>
+                    <span class="btn-loading" style="display: none;">
+                        <div class="spinner-small"></div>
+                        Running QAOA...
+                    </span>
+                </button>
+            </section>
+
+            <!-- Results Panel -->
+            <section class="panel results-panel" id="resultsPanel" style="display: none;">
+                <div class="panel-header">
+                    <h2>
+                        <span class="icon">🎯</span>
+                        Optimization Results
+                    </h2>
+                    <span class="computation-time" id="computationTime"></span>
+                </div>
+
+                <!-- Portfolio Summary -->
+                <div class="results-summary">
+                    <div class="metric-card primary">
+                        <div class="metric-icon">📊</div>
+                        <div class="metric-content">
+                            <span class="metric-value" id="resultReturn">--</span>
+                            <span class="metric-label">Expected Return</span>
+                        </div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-icon">⚠️</div>
+                        <div class="metric-content">
+                            <span class="metric-value" id="resultRisk">--</span>
+                            <span class="metric-label">Portfolio Risk</span>
+                        </div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-icon">📈</div>
+                        <div class="metric-content">
+                            <span class="metric-value" id="resultSharpe">--</span>
+                            <span class="metric-label">Sharpe Ratio</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Selected Stocks -->
+                <div class="selected-stocks-section">
+                    <h3>Selected Portfolio</h3>
+                    <div class="selected-stocks-grid" id="selectedStocksGrid">
+                        <!-- Selected stocks will appear here -->
+                    </div>
+                </div>
+
+                <!-- QAOA Metrics -->
+                <div class="qaoa-metrics">
+                    <h3>QAOA Performance</h3>
+                    <div class="metrics-grid">
+                        <div class="mini-metric">
+                            <span class="mini-label">Qubits</span>
+                            <span class="mini-value" id="metricQubits">--</span>
+                        </div>
+                        <div class="mini-metric">
+                            <span class="mini-label">Circuit Depth</span>
+                            <span class="mini-value" id="metricDepth">--</span>
+                        </div>
+                        <div class="mini-metric">
+                            <span class="mini-label">QAOA Layers</span>
+                            <span class="mini-value" id="metricLayers">--</span>
+                        </div>
+                        <div class="mini-metric">
+                            <span class="mini-label">Iterations</span>
+                            <span class="mini-value" id="metricIterations">--</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Stock Comparison Table -->
+                <div class="stock-comparison">
+                    <h3>Stock Metrics</h3>
+                    <div class="table-container">
+                        <table id="stockMetricsTable">
+                            <thead>
+                                <tr>
+                                    <th>Stock</th>
+                                    <th>Expected Return</th>
+                                    <th>Volatility</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Will be populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <div class="footer-content">
+                <p>Powered by <strong>Qiskit</strong> Quantum Simulator</p>
+                <p class="footer-note">Running on AerSimulator | NSE/BSE Market Data</p>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Error Toast -->
+    <div class="toast error-toast" id="errorToast" style="display: none;">
+        <span class="toast-icon">❌</span>
+        <span class="toast-message" id="errorMessage"></span>
+        <button class="toast-close" onclick="hideError()">×</button>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+
+</html>
