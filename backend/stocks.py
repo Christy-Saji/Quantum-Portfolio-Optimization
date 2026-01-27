@@ -62,44 +62,92 @@ def get_stock_list():
 
 
 def fetch_stock_data(tickers, period='2y'):
+    """
+    Fetch stock data from Yahoo Finance with robust fallback mechanisms.
+    Tries: batch download -> individual downloads -> mock data
+    """
     symbols = [NIFTY_50[t]['symbol'] for t in tickers]
     print(f"Fetching {len(tickers)} stocks from Yahoo Finance...")
     
     prices = pd.DataFrame()
     
+    # Strategy 1: Try batch download (fastest)
     try:
-        # Try using curl_cffi if available to bypass some blocks
-        try:
-            from curl_cffi import requests as c_requests
-            session = c_requests.Session()
-            session.verify = False
-        except ImportError:
-            import requests
-            session = requests.Session()
-            session.verify = False
-
-        raw_data = yf.download(symbols, period=period, progress=False, session=session)
+        print("Trying batch download...")
+        raw_data = yf.download(
+            symbols, 
+            period=period, 
+            progress=False,
+            auto_adjust=True,
+            threads=True
+        )
         
-        if len(tickers) == 1:
-            data = raw_data['Adj Close'] if 'Adj Close' in raw_data.columns else raw_data['Close']
-            data = pd.DataFrame(data, columns=tickers)
-        else:
-            if isinstance(raw_data.columns, pd.MultiIndex):
-                data = raw_data['Adj Close']
+        if not raw_data.empty:
+            # Handle single vs multiple stocks
+            if len(tickers) == 1:
+                if 'Close' in raw_data.columns:
+                    prices = pd.DataFrame(raw_data['Close'], columns=tickers)
+                else:
+                    prices = pd.DataFrame(raw_data, columns=tickers)
             else:
-                data = raw_data['Adj Close'] if 'Adj Close' in raw_data.columns else raw_data['Close']
-            data.columns = tickers
-        
-        prices = data.dropna()
+                # Multiple stocks
+                if isinstance(raw_data.columns, pd.MultiIndex):
+                    prices = raw_data['Close']
+                    prices.columns = tickers
+                else:
+                    prices = raw_data
+                    if len(prices.columns) == len(tickers):
+                        prices.columns = tickers
+            
+            prices = prices.dropna()
+            
+            if not prices.empty and len(prices) > 50:  # Need at least 50 days
+                print(f"✓ Batch download successful")
+                print(f"Got {len(prices)} days of data")
+                print_sample_data(prices, tickers)
+                return prices
     except Exception as e:
-        print(f"Error downloading data: {e}")
-
-    # Fallback to mock data if download failed or returned empty
-    if prices.empty:
-        print("WARNING: Download failed or empty. Generating mock data for demonstration.")
-        prices = generate_mock_data(tickers, period)
+        print(f"Batch download failed: {e}")
+    
+    # Strategy 2: Try downloading stocks one by one
+    print("Trying individual downloads...")
+    individual_data = {}
+    success_count = 0
+    
+    for ticker in tickers:
+        try:
+            symbol = NIFTY_50[ticker]['symbol']
+            stock_data = yf.download(
+                symbol, 
+                period=period, 
+                progress=False,
+                auto_adjust=True
+            )
+            
+            if not stock_data.empty:
+                if 'Close' in stock_data.columns:
+                    individual_data[ticker] = stock_data['Close']
+                else:
+                    individual_data[ticker] = stock_data.iloc[:, 0]
+                success_count += 1
+                print(f"  ✓ {ticker}: {len(stock_data)} days")
+        except Exception as e:
+            print(f"  ✗ {ticker}: {e}")
+    
+    if individual_data:
+        prices = pd.DataFrame(individual_data).dropna()
         
-    print(f"Got {len(prices)} days of data")
+        if not prices.empty and len(prices) > 50:
+            print(f"✓ Individual downloads successful ({success_count}/{len(tickers)} stocks)")
+            print(f"Got {len(prices)} days of data")
+            print_sample_data(prices, tickers)
+            return prices
+    
+    # Strategy 3: Fallback to mock data
+    print("⚠ All downloads failed. Generating mock data for demonstration.")
+    prices = generate_mock_data(tickers, period)
+    print(f"Got {len(prices)} days of data (synthetic)")
+    print_sample_data(prices, tickers)
     return prices
 
 
@@ -111,17 +159,58 @@ def generate_mock_data(tickers, period='2y'):
     dates = pd.date_range(end=pd.Timestamp.now(), periods=n_days, freq='B')
     mock_data = {}
     
-    np.random.seed(42) # For reproducible mock data
+    # Assign realistic sector-based characteristics
+    sector_params = {
+        'IT': {'base_return': 0.15, 'volatility': 0.25},
+        'Banking': {'base_return': 0.10, 'volatility': 0.30},
+        'Pharma': {'base_return': 0.12, 'volatility': 0.22},
+        'FMCG': {'base_return': 0.08, 'volatility': 0.18},
+        'Energy': {'base_return': 0.09, 'volatility': 0.28},
+        'Automobile': {'base_return': 0.11, 'volatility': 0.32},
+        'Finance': {'base_return': 0.13, 'volatility': 0.27},
+        'default': {'base_return': 0.10, 'volatility': 0.25}
+    }
     
-    for ticker in tickers:
-        # Generate random walk
-        start_price = np.random.uniform(500, 3000)
-        volatility = np.random.uniform(0.01, 0.03)
-        returns = np.random.normal(0.0005, volatility, n_days)
-        price_series = start_price * np.exp(np.cumsum(returns))
+    for i, ticker in enumerate(tickers):
+        # Use ticker name to generate unique but reproducible seed
+        ticker_seed = sum(ord(c) for c in ticker)  # Convert ticker to number
+        np.random.seed(ticker_seed)
+        
+        # Get sector-specific params or use default
+        sector = NIFTY_50.get(ticker, {}).get('sector', 'default')
+        base_params = sector_params.get(sector, sector_params['default'])
+        
+        # Target annualized return with sector bias and randomness: -10% to +25%
+        sector_base = base_params['base_return']
+        random_variation = np.random.uniform(-0.08, 0.12)  # ±8-12% variation
+        target_annual_return = sector_base + random_variation
+        
+        # Daily metrics
+        daily_return = target_annual_return / 252
+        daily_volatility = base_params['volatility'] / np.sqrt(252)
+        
+        # Generate price series
+        start_price = np.random.uniform(800, 2500)
+        daily_returns = np.random.normal(daily_return, daily_volatility, n_days)
+        price_series = start_price * np.exp(np.cumsum(daily_returns))
         mock_data[ticker] = price_series
         
     return pd.DataFrame(mock_data, index=dates)
+
+
+def print_sample_data(prices, tickers):
+    """Print the latest 5 days of closing prices in a table format"""
+    print("\nSample Data - Latest 5 Days of Closing Prices:")
+    print("=" * 80)
+    
+    # Get the last 5 rows
+    sample_df = prices.tail(5)
+    
+    # Format the dataframe for better display
+    pd.options.display.float_format = '{:.2f}'.format
+    print(sample_df.to_string())
+    print("=" * 80)
+    print()
 
 
 def calculate_returns_and_cov(prices):
