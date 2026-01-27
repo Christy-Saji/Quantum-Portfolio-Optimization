@@ -1,90 +1,46 @@
-# Git ignore patterns for Quantum Portfolio Optimization
-
-# Python
+# General
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
-.Python
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Environment & Settings
+.env
+.env.*
+!.env.example
+.vscode/
+.idea/
+
+# Dependencies
+venv/
+env/
+.venv/
+node_modules/
 build/
-develop-eggs/
 dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
 *.egg-info/
 .installed.cfg
 *.egg
 
-# Virtual environments
-venv/
-ENV/
-env/
-.venv/
-
-# IDE
-.idea/
-.vscode/
-*.swp
-*.swo
-*~
-.project
-.pydevproject
-.settings/
-
-# Jupyter
-.ipynb_checkpoints/
-*.ipynb_checkpoints
-
-# OS
-.DS_Store
-Thumbs.db
-ehthumbs.db
-Desktop.ini
-
-# Environment variables
-.env
-.env.local
-.env.production
-
-# Logs
+# Logs & Temporary Files
 *.log
 logs/
-
-# Testing
-.coverage
-htmlcov/
-.pytest_cache/
-.tox/
-
-# Mypy
-.mypy_cache/
-
-# Node (if using any node tools)
-node_modules/
-npm-debug.log
-yarn-error.log
-
-# Build artifacts
-*.pyc
-*.pyo
-*.pyd
-
-# Distribution
-dist/
-build/
-
-# Local data files (keep sample data)
-backend/data/*.csv
-!backend/data/nse_stocks_sample.csv
-
-# Temporary files
 *.tmp
 *.temp
 .cache/
+.pytest_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Project Specific
+# (Optional data files if you run purely locally)
+backend/data/
+
+# Jupyter
+.ipynb_checkpoints/
+# Uncomment the line below if you want to ignore all notebooks
+# notebooks/
