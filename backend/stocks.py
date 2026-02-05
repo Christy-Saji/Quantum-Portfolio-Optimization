@@ -32,7 +32,7 @@ NIFTY_50 = {
     'ASIANPAINT': {'symbol': 'ASIANPAINT.NS', 'name': 'Asian Paints', 'sector': 'Consumer'},
     'COALINDIA': {'symbol': 'COALINDIA.NS', 'name': 'Coal India', 'sector': 'Mining'},
     'WIPRO': {'symbol': 'WIPRO.NS', 'name': 'Wipro', 'sector': 'IT'},
-    'ZOMATO': {'symbol': 'ZOMATO.NS', 'name': 'Zomato', 'sector': 'Food Tech'},
+    'JUBLFOOD': {'symbol': 'JUBLFOOD.NS', 'name': 'Jubilant FoodWorks', 'sector': 'Food Tech'},
     'NESTLEIND': {'symbol': 'NESTLEIND.NS', 'name': 'Nestle India', 'sector': 'FMCG'},
     'ADANIENT': {'symbol': 'ADANIENT.NS', 'name': 'Adani Enterprises', 'sector': 'Infrastructure'},
     'POWERGRID': {'symbol': 'POWERGRID.NS', 'name': 'Power Grid Corporation', 'sector': 'Power'},
@@ -47,7 +47,7 @@ NIFTY_50 = {
     'JIOFIN': {'symbol': 'JIOFIN.NS', 'name': 'Jio Financial Services', 'sector': 'Finance'},
     'HDFCLIFE': {'symbol': 'HDFCLIFE.NS', 'name': 'HDFC Life Insurance', 'sector': 'Insurance'},
     'TRENT': {'symbol': 'TRENT.NS', 'name': 'Trent Limited', 'sector': 'Retail'},
-    'TATAMOTORS': {'symbol': 'TATAMOTORS.NS', 'name': 'Tata Motors', 'sector': 'Automobile'},
+    'BRITANNIA': {'symbol': 'BRITANNIA.NS', 'name': 'Britannia Industries', 'sector': 'FMCG'},
     'TATACONSUM': {'symbol': 'TATACONSUM.NS', 'name': 'Tata Consumer Products', 'sector': 'FMCG'},
     'CIPLA': {'symbol': 'CIPLA.NS', 'name': 'Cipla', 'sector': 'Pharma'},
     'DRREDDY': {'symbol': 'DRREDDY.NS', 'name': "Dr. Reddy's Laboratories", 'sector': 'Pharma'},
@@ -64,59 +64,17 @@ def get_stock_list():
 def fetch_stock_data(tickers, period='2y'):
     """
     Fetch stock data from Yahoo Finance with robust fallback mechanisms.
-    Tries: batch download -> individual downloads -> mock data
+    Returns: (prices DataFrame, stock_status dict)
     """
-    symbols = [NIFTY_50[t]['symbol'] for t in tickers]
     print(f"Fetching {len(tickers)} stocks from Yahoo Finance...")
     
-    prices = pd.DataFrame()
-    
-    # Strategy 1: Try batch download (fastest)
-    try:
-        print("Trying batch download...")
-        raw_data = yf.download(
-            symbols, 
-            period=period, 
-            progress=False,
-            auto_adjust=True,
-            threads=True
-        )
-        
-        if not raw_data.empty:
-            # Handle single vs multiple stocks
-            if len(tickers) == 1:
-                if 'Close' in raw_data.columns:
-                    prices = pd.DataFrame(raw_data['Close'], columns=tickers)
-                else:
-                    prices = pd.DataFrame(raw_data, columns=tickers)
-            else:
-                # Multiple stocks
-                if isinstance(raw_data.columns, pd.MultiIndex):
-                    prices = raw_data['Close']
-                    prices.columns = tickers
-                else:
-                    prices = raw_data
-                    if len(prices.columns) == len(tickers):
-                        prices.columns = tickers
-            
-            prices = prices.dropna()
-            
-            if not prices.empty and len(prices) > 50:  # Need at least 50 days
-                print(f"✓ Batch download successful")
-                print(f"Got {len(prices)} days of data")
-                print_sample_data(prices, tickers)
-                return prices
-    except Exception as e:
-        print(f"Batch download failed: {e}")
-    
-    # Strategy 2: Try downloading stocks one by one
-    print("Trying individual downloads...")
+    stock_status = {}  # Track status: 'available', 'data_unavailable', or 'mock_data'
     individual_data = {}
-    success_count = 0
     
+    # Download stocks one by one for better error tracking
     for ticker in tickers:
         try:
-            symbol = NIFTY_50[ticker]['symbol']
+            symbol = NIFTY_50[ticker.upper()]['symbol']
             stock_data = yf.download(
                 symbol, 
                 period=period, 
@@ -124,31 +82,56 @@ def fetch_stock_data(tickers, period='2y'):
                 auto_adjust=True
             )
             
-            if not stock_data.empty:
+            if not stock_data.empty and len(stock_data) > 50:
                 if 'Close' in stock_data.columns:
                     individual_data[ticker] = stock_data['Close']
                 else:
                     individual_data[ticker] = stock_data.iloc[:, 0]
-                success_count += 1
-                print(f"  ✓ {ticker}: {len(stock_data)} days")
+                stock_status[ticker] = 'available'
+                print(f"  + {ticker}: {len(stock_data)} days - Data available")
+            else:
+                stock_status[ticker] = 'data_unavailable'
+                print(f"  ! {ticker}: Data unavailable (insufficient history)")
         except Exception as e:
-            print(f"  ✗ {ticker}: {e}")
+            stock_status[ticker] = 'data_unavailable'
+            print(f"  x {ticker}: Data unavailable - {str(e)[:60]}")
     
+    # Build prices DataFrame from successful downloads
     if individual_data:
-        prices = pd.DataFrame(individual_data).dropna()
+        # Convert dict of Series to DataFrame
+        try:
+            prices = pd.DataFrame(individual_data)
+        except ValueError:
+            # If error, try with concat method
+            prices = pd.concat(individual_data, axis=1)
+            prices.columns = list(individual_data.keys())
+        
+        # Drop rows with any NaN values
+        prices = prices.dropna()
+        
+        # Update status for stocks dropped due to NaN values
+        for ticker in tickers:
+            if ticker not in prices.columns and stock_status.get(ticker) == 'available':
+                stock_status[ticker] = 'data_unavailable'
         
         if not prices.empty and len(prices) > 50:
-            print(f"✓ Individual downloads successful ({success_count}/{len(tickers)} stocks)")
+            success_count = len(prices.columns)
+            failed_count = len(tickers) - success_count
+            print(f"\n+ Downloaded {success_count}/{len(tickers)} stocks successfully")
+            if failed_count > 0:
+                failed_list = [t for t in tickers if t not in prices.columns]
+                print(f"! {failed_count} unavailable: {', '.join(failed_list)}")
             print(f"Got {len(prices)} days of data")
-            print_sample_data(prices, tickers)
-            return prices
+            print_sample_data(prices, list(prices.columns))
+            return prices, stock_status
     
-    # Strategy 3: Fallback to mock data
-    print("⚠ All downloads failed. Generating mock data for demonstration.")
+    # Fallback: Generate mock data for all stocks
+    print("\n! Insufficient real data. Generating mock data for demonstration.")
     prices = generate_mock_data(tickers, period)
-    print(f"Got {len(prices)} days of data (synthetic)")
+    stock_status = {ticker: 'mock_data' for ticker in tickers}
+    print(f"Got {len(prices)} days of synthetic data")
     print_sample_data(prices, tickers)
-    return prices
+    return prices, stock_status
 
 
 def generate_mock_data(tickers, period='2y'):
