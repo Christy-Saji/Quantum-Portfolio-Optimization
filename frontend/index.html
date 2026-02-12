@@ -16,7 +16,6 @@
 </head>
 
 <body>
-    <!-- Animated Background -->
     <div class="bg-animation">
         <div class="quantum-particle"></div>
         <div class="quantum-particle"></div>
@@ -25,9 +24,7 @@
         <div class="quantum-particle"></div>
     </div>
 
-    <!-- Main Container -->
     <div class="container">
-        <!-- Header -->
         <header class="header">
             <div class="logo">
                 <span class="logo-icon">⚛️</span>
@@ -36,43 +33,31 @@
             <p class="tagline">Harness QAOA for optimal stock selection</p>
         </header>
 
-        <!-- Main Content -->
         <main class="main-content">
-            <!-- Stock Selection Panel -->
+            <!-- Stock Selection -->
             <section class="panel stock-panel">
                 <div class="panel-header">
-                    <h2>
-                        <span class="icon">📈</span>
-                        Select Stocks
-                    </h2>
+                    <h2><span class="icon">📈</span> Select Stocks</h2>
                     <span class="selected-count" id="selectedCount">0 selected</span>
                 </div>
-
                 <div class="stock-grid" id="stockGrid">
-                    <!-- Stocks will be loaded here -->
                     <div class="loading-placeholder">
                         <div class="spinner"></div>
                         <p>Loading stocks...</p>
                     </div>
                 </div>
-
                 <div class="quick-actions">
                     <button class="btn btn-outline" id="selectAllBtn">Select All</button>
                     <button class="btn btn-outline" id="clearAllBtn">Clear All</button>
                 </div>
             </section>
 
-            <!-- Configuration Panel -->
+            <!-- Configuration -->
             <section class="panel config-panel">
                 <div class="panel-header">
-                    <h2>
-                        <span class="icon">⚙️</span>
-                        Configuration
-                    </h2>
+                    <h2><span class="icon">⚙️</span> Configuration</h2>
                 </div>
-
                 <div class="config-options">
-                    <!-- Portfolio Size -->
                     <div class="config-group">
                         <label for="portfolioSize">Portfolio Size (k)</label>
                         <p class="config-description">Number of stocks to select</p>
@@ -83,8 +68,6 @@
                         </div>
                         <input type="hidden" id="portfolioSize" value="3">
                     </div>
-
-                    <!-- Risk Aversion -->
                     <div class="config-group">
                         <label for="riskAversion">Risk Aversion (λ)</label>
                         <p class="config-description">0 = Max Returns, 1 = Min Risk</p>
@@ -97,8 +80,25 @@
                             </div>
                         </div>
                     </div>
-
-                    <!-- Advanced Options (Collapsible) -->
+                    <div class="config-group">
+                        <label>Sector Diversification</label>
+                        <p class="config-description">Prevent overconcentration in one sector</p>
+                        <div class="toggle-container">
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="sectorDiversify">
+                                <span class="toggle-slider"></span>
+                            </label>
+                            <span class="toggle-label" id="sectorToggleLabel">Disabled</span>
+                        </div>
+                        <div class="sector-limit-group" id="sectorLimitGroup"
+                            style="display: none; margin-top: 0.5rem;">
+                            <label for="maxPerSector" style="font-size: 0.85rem;">Max stocks per sector</label>
+                            <select id="maxPerSector">
+                                <option value="1" selected>1 (Maximum diversity)</option>
+                                <option value="2">2 (Moderate)</option>
+                            </select>
+                        </div>
+                    </div>
                     <details class="advanced-options">
                         <summary>Advanced QAOA Settings</summary>
                         <div class="advanced-content">
@@ -124,29 +124,21 @@
                         </div>
                     </details>
                 </div>
-
-                <!-- Optimize Button -->
                 <button class="btn btn-primary optimize-btn" id="optimizeBtn">
                     <span class="btn-icon">⚛️</span>
                     <span class="btn-text">Optimize Portfolio</span>
                     <span class="btn-loading" style="display: none;">
-                        <div class="spinner-small"></div>
-                        Running QAOA...
+                        <div class="spinner-small"></div> Running QAOA...
                     </span>
                 </button>
             </section>
 
-            <!-- Results Panel -->
+            <!-- Results -->
             <section class="panel results-panel" id="resultsPanel" style="display: none;">
                 <div class="panel-header">
-                    <h2>
-                        <span class="icon">🎯</span>
-                        Optimization Results
-                    </h2>
+                    <h2><span class="icon">🎯</span> Optimization Results</h2>
                     <span class="computation-time" id="computationTime"></span>
                 </div>
-
-                <!-- Portfolio Summary -->
                 <div class="results-summary">
                     <div class="metric-card primary">
                         <div class="metric-icon">📊</div>
@@ -170,39 +162,73 @@
                         </div>
                     </div>
                 </div>
-
-                <!-- Selected Stocks -->
                 <div class="selected-stocks-section">
                     <h3>Selected Portfolio</h3>
-                    <div class="selected-stocks-grid" id="selectedStocksGrid">
-                        <!-- Selected stocks will appear here -->
-                    </div>
+                    <div class="selected-stocks-grid" id="selectedStocksGrid"></div>
                 </div>
-
-                <!-- QAOA Metrics -->
                 <div class="qaoa-metrics">
                     <h3>QAOA Performance</h3>
                     <div class="metrics-grid">
-                        <div class="mini-metric">
-                            <span class="mini-label">Qubits</span>
-                            <span class="mini-value" id="metricQubits">--</span>
-                        </div>
-                        <div class="mini-metric">
-                            <span class="mini-label">Circuit Depth</span>
-                            <span class="mini-value" id="metricDepth">--</span>
-                        </div>
-                        <div class="mini-metric">
-                            <span class="mini-label">QAOA Layers</span>
-                            <span class="mini-value" id="metricLayers">--</span>
-                        </div>
-                        <div class="mini-metric">
-                            <span class="mini-label">Iterations</span>
-                            <span class="mini-value" id="metricIterations">--</span>
-                        </div>
+                        <div class="mini-metric"><span class="mini-label">Qubits</span><span class="mini-value"
+                                id="metricQubits">--</span></div>
+                        <div class="mini-metric"><span class="mini-label">Circuit Depth</span><span class="mini-value"
+                                id="metricDepth">--</span></div>
+                        <div class="mini-metric"><span class="mini-label">QAOA Layers</span><span class="mini-value"
+                                id="metricLayers">--</span></div>
+                        <div class="mini-metric"><span class="mini-label">Iterations</span><span class="mini-value"
+                                id="metricIterations">--</span></div>
                     </div>
                 </div>
-
-                <!-- Stock Comparison Table -->
+                <div class="sector-badge-section" id="sectorBadgeSection" style="display: none; margin-bottom: 1.5rem;">
+                    <div id="sectorBadge" class="comparison-match-badge"></div>
+                </div>
+                <div class="comparison-section" id="comparisonSection" style="display: none;">
+                    <h3>⚡ Classical vs Quantum Comparison</h3>
+                    <div id="comparisonMatchBadge" class="comparison-match-badge"></div>
+                    <div class="table-container">
+                        <table class="comparison-table">
+                            <thead>
+                                <tr>
+                                    <th>Metric</th>
+                                    <th>🖥️ Classical (Brute-Force)</th>
+                                    <th>⚛️ QAOA (Quantum)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Selected Stocks</td>
+                                    <td id="classicalStocks">--</td>
+                                    <td id="qaoaStocks">--</td>
+                                </tr>
+                                <tr>
+                                    <td>Expected Return</td>
+                                    <td id="classicalReturn">--</td>
+                                    <td id="qaoaReturn">--</td>
+                                </tr>
+                                <tr>
+                                    <td>Portfolio Risk</td>
+                                    <td id="classicalRisk">--</td>
+                                    <td id="qaoaRisk">--</td>
+                                </tr>
+                                <tr>
+                                    <td>Sharpe Ratio</td>
+                                    <td id="classicalSharpe">--</td>
+                                    <td id="qaoaSharpe">--</td>
+                                </tr>
+                                <tr>
+                                    <td>Optimal Cost</td>
+                                    <td id="classicalCost">--</td>
+                                    <td id="qaoaCost">--</td>
+                                </tr>
+                                <tr>
+                                    <td>Computation Time</td>
+                                    <td id="classicalTime">--</td>
+                                    <td id="qaoaTime">--</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
                 <div class="stock-comparison">
                     <h3>Stock Metrics</h3>
                     <div class="table-container">
@@ -215,16 +241,13 @@
                                     <th>Status</th>
                                 </tr>
                             </thead>
-                            <tbody>
-                                <!-- Will be populated dynamically -->
-                            </tbody>
+                            <tbody></tbody>
                         </table>
                     </div>
                 </div>
             </section>
         </main>
 
-        <!-- Footer -->
         <footer class="footer">
             <div class="footer-content">
                 <p>Powered by <strong>Qiskit</strong> Quantum Simulator</p>
@@ -233,7 +256,6 @@
         </footer>
     </div>
 
-    <!-- Error Toast -->
     <div class="toast error-toast" id="errorToast" style="display: none;">
         <span class="toast-icon">❌</span>
         <span class="toast-message" id="errorMessage"></span>
@@ -241,7 +263,6 @@
     </div>
 
     <script src="app.js"></script>
-
 </body>
 
 </html>
