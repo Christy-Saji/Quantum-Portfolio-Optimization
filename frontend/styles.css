@@ -801,6 +801,7 @@ tr:hover {
     line-height: 1;
 }
 
+<<<<<<< Updated upstream
 .toggle-container {
     display: flex;
     align-items: center;
@@ -861,6 +862,10 @@ tr:hover {
     font-weight: 500;
 }
 
+=======
+/* Responsive Design */
+/* Classical vs Quantum Comparison */
+>>>>>>> Stashed changes
 .comparison-section {
     margin-bottom: var(--spacing-lg);
 }
@@ -906,6 +911,10 @@ tr:hover {
     color: var(--text-secondary);
 }
 
+<<<<<<< Updated upstream
+=======
+
+>>>>>>> Stashed changes
 @media (max-width: 768px) {
     .container {
         padding: var(--spacing-sm);

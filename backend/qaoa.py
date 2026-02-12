@@ -7,8 +7,49 @@ from qiskit.primitives import StatevectorSampler
 from qiskit.quantum_info import SparsePauliOp
 
 
+<<<<<<< Updated upstream
 def build_qubo_matrix(returns, covariance, k, lambda_param=0.5, sector_indices=None, max_per_sector=1):
     """Build the QUBO matrix for portfolio optimization."""
+=======
+def classical_brute_force(returns, covariance, k, lambda_param=0.5):
+    """
+    Classical brute-force solver: evaluates ALL C(n,k) combinations
+    using the same QUBO matrix as QAOA for a fair comparison.
+    """
+    n = len(returns)
+    Q = build_qubo_matrix(returns, covariance, k, lambda_param)
+
+    start_time = time.time()
+
+    best_cost = float('inf')
+    best_indices = None
+    total_combinations = 0
+
+    for combo in combinations(range(n), k):
+        x = np.zeros(n)
+        for i in combo:
+            x[i] = 1.0
+        cost = x @ Q @ x
+        total_combinations += 1
+        if cost < best_cost:
+            best_cost = cost
+            best_indices = list(combo)
+
+    elapsed = time.time() - start_time
+
+    best_bitstring = ''.join('1' if i in best_indices else '0' for i in range(n))
+
+    return {
+        'selected_indices': best_indices,
+        'optimal_bitstring': best_bitstring,
+        'optimal_cost': float(best_cost),
+        'total_combinations': total_combinations,
+        'computation_time': elapsed
+    }
+
+
+def build_qubo_matrix(returns, covariance, k, lambda_param=0.5):
+>>>>>>> Stashed changes
     n = len(returns)
     penalty = max(10.0, 2.0 * max(np.max(np.abs(covariance)), np.max(np.abs(returns))) * n)
     Q = np.zeros((n, n))

@@ -237,6 +237,41 @@ function displayResults(result) {
                 <td class="${m.selected ? 'status-selected' : 'status-not-selected'}">${m.selected ? '✓ Selected' : '—'}</td>
             </tr>
         `).join('');
+
+    // Classical vs Quantum Comparison
+    if (result.comparison) {
+        const comp = result.comparison;
+        const section = document.getElementById('comparisonSection');
+        section.style.display = 'block';
+
+        // Match badge
+        const badge = document.getElementById('comparisonMatchBadge');
+        if (comp.results_match) {
+            badge.innerHTML = '✅ Both methods found the <strong>same optimal portfolio</strong>';
+            badge.className = 'comparison-match-badge match';
+        } else {
+            badge.innerHTML = '⚠️ Methods found <strong>different portfolios</strong> — QAOA may need more iterations';
+            badge.className = 'comparison-match-badge mismatch';
+        }
+
+        // Classical column
+        document.getElementById('classicalStocks').textContent = comp.classical.selected_stocks.join(', ');
+        document.getElementById('classicalReturn').textContent = `${(comp.classical.expected_return * 100).toFixed(2)}%`;
+        document.getElementById('classicalRisk').textContent = `${(comp.classical.portfolio_risk * 100).toFixed(2)}%`;
+        document.getElementById('classicalSharpe').textContent = comp.classical.sharpe_ratio.toFixed(3);
+        document.getElementById('classicalCost').textContent = comp.classical.optimal_cost.toFixed(4);
+        document.getElementById('classicalTime').textContent = `${comp.classical.computation_time.toFixed(4)}s`;
+        document.getElementById('classicalMethod').textContent = `Evaluated ${comp.classical.combinations_evaluated} combinations`;
+
+        // QAOA column
+        document.getElementById('qaoaStocks').textContent = comp.qaoa.selected_stocks.join(', ');
+        document.getElementById('qaoaReturn').textContent = `${(comp.qaoa.expected_return * 100).toFixed(2)}%`;
+        document.getElementById('qaoaRisk').textContent = `${(comp.qaoa.portfolio_risk * 100).toFixed(2)}%`;
+        document.getElementById('qaoaSharpe').textContent = comp.qaoa.sharpe_ratio.toFixed(3);
+        document.getElementById('qaoaCost').textContent = comp.qaoa.optimal_cost.toFixed(4);
+        document.getElementById('qaoaTime').textContent = `${comp.qaoa.computation_time.toFixed(4)}s`;
+        document.getElementById('qaoaMethod').textContent = `${comp.qaoa.qaoa_iterations} QAOA iterations`;
+    }
 }
 
 function setLoadingState(loading) {

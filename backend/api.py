@@ -6,8 +6,14 @@ from pydantic import BaseModel
 from typing import List
 import numpy as np
 
+<<<<<<< Updated upstream
 from stocks import get_stock_list, fetch_stock_data, calculate_returns_and_cov, NIFTY_50
 from qaoa import optimize_qaoa, classical_brute_force
+=======
+from stocks import get_stock_list, fetch_stock_data, calculate_returns_and_cov
+from qaoa import optimize_qaoa, classical_brute_force
+
+>>>>>>> Stashed changes
 
 app = FastAPI(title="Quantum Portfolio Optimizer")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
@@ -66,6 +72,32 @@ def optimize_portfolio(request: OptimizeRequest):
             raise HTTPException(400, f"k ({request.k}) exceeds available stocks ({n_available}). Failed: {', '.join(failed)}")
 
         returns, covariance = calculate_returns_and_cov(prices)
+<<<<<<< Updated upstream
+=======
+        
+        # --- Run Classical Brute-Force ---
+        print("Running classical brute-force solver...")
+        classical_start = time.time()
+        classical_result = classical_brute_force(
+            returns, covariance, request.k,
+            lambda_param=request.lambda_param
+        )
+        classical_time = time.time() - classical_start
+        
+        # --- Run QAOA (Quantum) ---
+        print("Running QAOA quantum solver...")
+        qaoa_start = time.time()
+        result = optimize_qaoa(
+            returns, covariance, request.k,
+            lambda_param=request.lambda_param,
+            p=request.p,
+            maxiter=request.maxiter,
+            shots=request.shots
+        )
+        qaoa_time = time.time() - qaoa_start
+        
+        # Map selected indices to actual stock tickers (prices.columns, not request.stocks)
+>>>>>>> Stashed changes
         actual_tickers = list(prices.columns)
 
         # Build sector index mapping if enabled
@@ -90,12 +122,40 @@ def optimize_portfolio(request: OptimizeRequest):
 
         selected_tickers = [actual_tickers[i] for i in result['selected_indices']]
         classical_tickers = [actual_tickers[i] for i in classical_result['selected_indices']]
+<<<<<<< Updated upstream
 
         port_return, port_risk, sharpe = compute_portfolio_metrics(returns, covariance, result['selected_indices'])
         c_return, c_risk, c_sharpe = compute_portfolio_metrics(returns, covariance, classical_result['selected_indices'])
 
         results_match = set(result['selected_indices']) == set(classical_result['selected_indices'])
 
+=======
+        n_selected = len(selected_tickers)
+        weights = [1.0 / n_selected] * n_selected
+        
+        selected_returns = returns[result['selected_indices']]
+        portfolio_return = np.mean(selected_returns)
+        
+        w = np.zeros(len(returns))
+        w[result['selected_indices']] = 1.0 / n_selected
+        portfolio_variance = w @ covariance @ w
+        portfolio_risk = np.sqrt(portfolio_variance)
+        sharpe = portfolio_return / portfolio_risk if portfolio_risk > 0 else 0
+        
+        # Classical portfolio metrics
+        classical_selected_returns = returns[classical_result['selected_indices']]
+        classical_portfolio_return = np.mean(classical_selected_returns)
+        w_classical = np.zeros(len(returns))
+        n_classical = len(classical_result['selected_indices'])
+        w_classical[classical_result['selected_indices']] = 1.0 / n_classical
+        classical_portfolio_variance = w_classical @ covariance @ w_classical
+        classical_portfolio_risk = np.sqrt(classical_portfolio_variance)
+        classical_sharpe = classical_portfolio_return / classical_portfolio_risk if classical_portfolio_risk > 0 else 0
+        
+        # Check if both methods found the same solution
+        results_match = set(result['selected_indices']) == set(classical_result['selected_indices'])
+        
+>>>>>>> Stashed changes
         stock_metrics = {}
         for i, ticker in enumerate(actual_tickers):
             stock_metrics[ticker] = {
@@ -126,6 +186,7 @@ def optimize_portfolio(request: OptimizeRequest):
             },
             "comparison": {
                 "classical": {
+<<<<<<< Updated upstream
                     "selected_stocks": classical_tickers, "optimal_cost": classical_result['optimal_cost'],
                     "expected_return": c_return, "portfolio_risk": c_risk, "sharpe_ratio": c_sharpe,
                     "computation_time": round(classical_result['computation_time'], 4),
@@ -141,6 +202,27 @@ def optimize_portfolio(request: OptimizeRequest):
             "sector_diversification": {
                 "enabled": request.sector_diversify,
                 "max_per_sector": request.max_per_sector if request.sector_diversify else None
+=======
+                    "selected_stocks": classical_tickers,
+                    "optimal_cost": classical_result['optimal_cost'],
+                    "expected_return": float(classical_portfolio_return),
+                    "portfolio_risk": float(classical_portfolio_risk),
+                    "sharpe_ratio": float(classical_sharpe),
+                    "computation_time": round(classical_time, 4),
+                    "combinations_evaluated": classical_result['total_combinations']
+                },
+                "qaoa": {
+                    "selected_stocks": selected_tickers,
+                    "optimal_cost": result['optimal_cost'],
+                    "expected_return": float(portfolio_return),
+                    "portfolio_risk": float(portfolio_risk),
+                    "sharpe_ratio": float(sharpe),
+                    "computation_time": round(qaoa_time, 4),
+                    "qaoa_iterations": result['iterations']
+                },
+                "results_match": results_match,
+                "speedup_factor": round(qaoa_time / classical_time, 2) if classical_time > 0 else None
+>>>>>>> Stashed changes
             },
             "stock_metrics": stock_metrics,
             "data_source": "mock_data" if all(s == 'mock_data' for s in stock_status.values()) else "yahoo_finance",
